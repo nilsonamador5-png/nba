@@ -3,6 +3,7 @@ RestauranteApp — pip install flask matplotlib pillow — python app.py
 Admin: http://localhost:5000/admin  pass:
 """
 from flask import Flask, request, redirect, url_for, session, Response
+import os
 import sqlite3, base64, io
 from datetime import datetime
 import matplotlib
@@ -1170,4 +1171,5 @@ if __name__ == "__main__":
     print("  Admin:    http://localhost:5000/admin")
     print("  Password: ")
     print("="*48 + "\n")
-    app.run(debug=True, port=5000)
+
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
