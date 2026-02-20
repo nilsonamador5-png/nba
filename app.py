@@ -1373,11 +1373,9 @@ def reset_cliente1():
     total_ingresos   = db.execute("SELECT SUM(total) FROM pedidos WHERE estado != 'Cancelado'").fetchone()[0] or 0
     total_enviados   = db.execute("SELECT COUNT(*) FROM pedidos WHERE estado='Enviado'").fetchone()[0]
     total_cancelados = db.execute("SELECT COUNT(*) FROM pedidos WHERE estado='Cancelado'").fetchone()[0]
-    db.execute("DELETE FROM pedidos")
-    db.commit()
     db.close()
-    fecha    = datetime.now().strftime("%d/%m/%Y %H:%M")
     ingresos = "{:,.0f}".format(total_ingresos)
+    fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
     html = (
         "<!DOCTYPE html><html lang='es'><head>"
         "<meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1.0'>"
@@ -1392,31 +1390,97 @@ def reset_cliente1():
         "box-shadow:0 0 60px rgba(229,9,20,.2)}"
         ".icon{font-size:4rem;margin-bottom:16px}"
         "h1{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:3px;color:#E50914;margin-bottom:6px}"
-        ".sub{color:#aaa;font-size:.85rem;margin-bottom:28px}"
+        ".sub{color:#aaa;font-size:.85rem;margin-bottom:24px}"
+        ".row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #2a2a2a;font-size:.95rem}"
+        ".val{color:#E50914;font-weight:700}"
+        ".total-row{display:flex;justify-content:space-between;padding:14px 0;font-size:1.1rem;font-weight:800}"
+        ".verde{color:#46d369;font-size:1.2rem}"
+        ".warn{background:rgba(229,9,20,.1);border:2px solid #E50914;border-radius:8px;"
+        "padding:14px;margin-top:20px;color:#E50914;font-size:.88rem}"
+        ".badge{display:inline-block;background:#1d428a;color:#fff;"
+        "font-family:'Bebas Neue',sans-serif;letter-spacing:3px;font-size:.9rem;"
+        "padding:4px 14px;border-radius:4px;border:2px solid #C8102E;margin-bottom:20px}"
+        ".btns{display:flex;gap:12px;margin-top:20px}"
+        ".btn-del{flex:1;background:#8B0000;color:#fff;padding:12px;border-radius:6px;"
+        "text-decoration:none;font-weight:700;font-family:'Bebas Neue',sans-serif;"
+        "letter-spacing:2px;font-size:1rem;border:2px solid #E50914;cursor:pointer}"
+        ".btn-del:hover{background:#E50914}"
+        ".btn-can{flex:1;background:#333;color:#fff;padding:12px;border-radius:6px;"
+        "text-decoration:none;font-weight:700;font-family:'Bebas Neue',sans-serif;"
+        "letter-spacing:2px;font-size:1rem;border:2px solid #555}"
+        ".fecha{color:#555;font-size:.75rem;margin-top:14px}"
+        "</style></head><body>"
+        "<div class='box'>"
+        "<div class='icon'>⚠️</div>"
+        "<div class='badge'>🏀 NBA — CLIENTE 1</div>"
+        "<h1>RESETEAR MES</h1>"
+        "<p class='sub'>Resumen actual antes de eliminar</p>"
+        "<div class='row'><span>📦 Total pedidos</span><span class='val'>" + str(total_peds) + "</span></div>"
+        "<div class='row'><span>🚀 Enviados</span><span class='val'>" + str(total_enviados) + "</span></div>"
+        "<div class='row'><span>❌ Cancelados</span><span class='val'>" + str(total_cancelados) + "</span></div>"
+        "<div class='total-row'><span>💰 Ingresos del mes</span><span class='verde'>₡ " + ingresos + "</span></div>"
+        "<div class='warn'>⚠️ Esta accion borrara TODOS los pedidos e ingresos. No se puede deshacer.</div>"
+        "<div class='btns'>"
+        "<a href='/reset-cliente1-2024/confirmar' class='btn-del'>🗑️ ELIMINAR TODO</a>"
+        "<a href='/admin' class='btn-can'>✕ CANCELAR</a>"
+        "</div>"
+        "<p class='fecha'>Fecha: " + fecha + "</p>"
+        "</div></body></html>"
+    )
+    return html
+
+
+@app.route("/reset-cliente1-2024/confirmar")
+def reset_cliente1_confirmar():
+    db = get_db()
+    total_peds       = db.execute("SELECT COUNT(*) FROM pedidos").fetchone()[0]
+    total_ingresos   = db.execute("SELECT SUM(total) FROM pedidos WHERE estado != 'Cancelado'").fetchone()[0] or 0
+    total_enviados   = db.execute("SELECT COUNT(*) FROM pedidos WHERE estado='Enviado'").fetchone()[0]
+    total_cancelados = db.execute("SELECT COUNT(*) FROM pedidos WHERE estado='Cancelado'").fetchone()[0]
+    db.execute("DELETE FROM pedidos")
+    db.commit()
+    db.close()
+    ingresos = "{:,.0f}".format(total_ingresos)
+    fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+    html = (
+        "<!DOCTYPE html><html lang='es'><head>"
+        "<meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1.0'>"
+        "<title>Reset Cliente 1</title>"
+        "<link href='https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;700&display=swap' rel='stylesheet'>"
+        "<style>"
+        "*{box-sizing:border-box;margin:0;padding:0}"
+        "body{font-family:Montserrat,sans-serif;background:#141414;color:#eaeaea;"
+        "min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}"
+        ".box{background:#1f1f1f;border:2px solid #46d369;border-radius:10px;"
+        "padding:40px;max-width:480px;width:100%;text-align:center;"
+        "box-shadow:0 0 60px rgba(70,211,105,.15)}"
+        ".icon{font-size:4rem;margin-bottom:16px}"
+        "h1{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:3px;color:#46d369;margin-bottom:6px}"
+        ".sub{color:#aaa;font-size:.85rem;margin-bottom:24px}"
         ".row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #2a2a2a;font-size:.95rem}"
         ".val{color:#E50914;font-weight:700}"
         ".total-row{display:flex;justify-content:space-between;padding:14px 0;font-size:1.1rem;font-weight:800}"
         ".verde{color:#46d369;font-size:1.2rem}"
         ".ok{background:rgba(70,211,105,.12);border:2px solid #46d369;border-radius:8px;"
-        "padding:16px;margin-top:24px;color:#46d369;font-weight:700;font-size:1rem}"
-        ".fecha{color:#555;font-size:.78rem;margin-top:16px}"
+        "padding:16px;margin-top:20px;color:#46d369;font-weight:700;font-size:1rem}"
         ".badge{display:inline-block;background:#1d428a;color:#fff;"
         "font-family:'Bebas Neue',sans-serif;letter-spacing:3px;font-size:.9rem;"
         "padding:4px 14px;border-radius:4px;border:2px solid #C8102E;margin-bottom:20px}"
         "a{display:inline-block;margin-top:20px;background:#E50914;color:#fff;"
-        "padding:10px 28px;border-radius:6px;text-decoration:none;font-weight:700;"
+        "padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:700;"
         "font-family:'Bebas Neue',sans-serif;letter-spacing:2px;font-size:1rem}"
+        ".fecha{color:#555;font-size:.75rem;margin-top:14px}"
         "</style></head><body>"
         "<div class='box'>"
-        "<div class='icon'>🗑️</div>"
+        "<div class='icon'>✅</div>"
         "<div class='badge'>🏀 NBA — CLIENTE 1</div>"
         "<h1>MES RESETEADO</h1>"
         "<p class='sub'>Resumen del mes eliminado</p>"
-        "<div class='row'><span>📦 Total pedidos borrados</span><span class='val'>" + str(total_peds) + "</span></div>"
+        "<div class='row'><span>📦 Pedidos borrados</span><span class='val'>" + str(total_peds) + "</span></div>"
         "<div class='row'><span>🚀 Enviados</span><span class='val'>" + str(total_enviados) + "</span></div>"
         "<div class='row'><span>❌ Cancelados</span><span class='val'>" + str(total_cancelados) + "</span></div>"
-        "<div class='total-row'><span>💰 Ingresos del mes</span><span class='verde'>₡ " + ingresos + "</span></div>"
-        "<div class='ok'>✅ Base de datos limpia — El dueño empieza el mes desde cero</div>"
+        "<div class='total-row'><span>💰 Ingresos eliminados</span><span class='verde'>₡ " + ingresos + "</span></div>"
+        "<div class='ok'>✅ Base de datos limpia — Empezando el mes desde cero</div>"
         "<p class='fecha'>Reseteo realizado: " + fecha + "</p>"
         "<a href='/admin'>Ir al Panel Admin</a>"
         "</div></body></html>"
