@@ -934,6 +934,16 @@ def render_admin_page(peds, prods, grafica=None, msg="", tipo="ok"):
   <p style="color:#9b59b6;font-weight:800;font-size:1rem;margin-bottom:14px">&#128273; Panel Maestro &mdash; Estado del sitio: """ + master_estado + """</p>
   <div style="display:flex;gap:12px;flex-wrap:wrap">""" + master_btn + """</div>
 </div>"""
+  else:
+    if session.get("admin"):
+        master_panel = """<div style="background:rgba(229,9,20,.12);border:2px solid #E50914;border-radius:8px;padding:20px;margin-bottom:20px">
+  <p style="color:#E50914;font-weight:800;font-size:1rem;margin-bottom:14px;font-family:'Bebas Neue',sans-serif;letter-spacing:2px">&#128465; RESETEAR MES</p>
+  <p style="color:#aaa;font-size:.85rem;margin-bottom:14px">Borra todos los pedidos e ingresos para empezar el mes desde cero.</p>
+  <a href="/admin/reset-mes" class="btn" style="font-size:1rem;padding:12px 28px;background:#8B0000;color:#fff;border:2px solid #E50914"
+     onclick="return confirm('Esto borrara TODOS los pedidos del mes. Seguro?')">
+     &#128465; RESETEAR MES
+  </a>
+</div>"""
     else:
         master_panel = ""
 
@@ -1161,7 +1171,17 @@ def grafica_route():
     db2.close()
     return render_admin_page(peds2, prods2, g64, "", "ok")
 
-
+@app.route("/admin/reset-mes")
+def reset_mes():
+    if not session.get("admin") or session.get("master"): return redirect(url_for("admin_login"))
+    db = get_db()
+    total_peds = db.execute("SELECT COUNT(*) FROM pedidos").fetchone()[0]
+    total_ingresos = db.execute("SELECT SUM(total) FROM pedidos WHERE estado != 'Cancelado'").fetchone()[0] or 0
+    db.execute("DELETE FROM pedidos")
+    db.commit()
+    db.close()
+    msg = "🗑️ Mes reseteado — %d pedidos borrados (₡ %s en ingresos)." % (total_peds, "{:,.0f}".format(total_ingresos))
+    return redirect(url_for("admin", msg=msg, tipo="ok"))
 if __name__ == "__main__":
     init_db()
     print("\n" + "="*48)
@@ -1173,3 +1193,4 @@ if __name__ == "__main__":
     print("="*48 + "\n")
 
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
