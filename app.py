@@ -3,7 +3,6 @@ RestauranteApp — pip install flask matplotlib pillow — python app.py
 Admin: http://localhost:5000/admin  pass:
 """
 from flask import Flask, request, redirect, url_for, session, Response
-import os
 import sqlite3, base64, io
 from datetime import datetime
 import matplotlib
@@ -47,7 +46,6 @@ def init_db():
         db.execute("ALTER TABLE pedidos ADD COLUMN numero_ficha TEXT DEFAULT ''")
     except:
         pass
-    # Config por defecto
     db.execute("INSERT OR IGNORE INTO config_sitio(clave,valor) VALUES('nombre_sitio','RestauranteApp')")
     db.execute("INSERT OR IGNORE INTO config_sitio(clave,valor) VALUES('logo_sitio','')")
     if db.execute("SELECT COUNT(*) FROM productos").fetchone()[0] == 0:
@@ -59,65 +57,27 @@ def init_db():
 
 
 def sitio_activo():
-    """Retorna True si el sitio está activado por el admin"""
     db = get_db()
     row = db.execute("SELECT valor FROM config_sitio WHERE clave='sitio_activo'").fetchone()
     db.close()
     return (row["valor"] == "1") if row else True
 
 def pagina_bloqueada():
-    """Página que ve el cliente cuando el sitio está desactivado"""
     return """<!DOCTYPE html><html lang="es"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Servicio no disponible</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#eaeaea;
+body{font-family:'Bebas Neue','Segoe UI',sans-serif;background:#141414;color:#eaeaea;
   min-height:100vh;display:flex;align-items:center;justify-content:center}
 .box{text-align:center;padding:50px 30px;max-width:480px}
 .icon{font-size:5rem;margin-bottom:20px}
-h1{font-size:1.8rem;color:#faa307;margin-bottom:14px}
+h1{font-size:2rem;color:#E50914;margin-bottom:14px;letter-spacing:2px}
 p{color:#aaa;font-size:1rem;line-height:1.6}
 </style></head><body>
 <div class="box">
   <div class="icon">🔒</div>
-  <h1>Servicio no disponible</h1>
-  <p>Este servicio se encuentra temporalmente suspendido.<br>
-  Por favor contacta al administrador para mas informacion.</p>
-</div>
-</body></html>"""
-
-def get_config():
-    db = get_db()
-    rows = db.execute("SELECT clave,valor FROM config_sitio").fetchall()
-    db.close()
-    return {r["clave"]: r["valor"] for r in rows}
-
-
-def sitio_activo():
-    """Retorna True si el sitio está activado por el admin"""
-    db = get_db()
-    row = db.execute("SELECT valor FROM config_sitio WHERE clave='sitio_activo'").fetchone()
-    db.close()
-    return (row["valor"] == "1") if row else True
-
-def pagina_bloqueada():
-    """Página que ve el cliente cuando el sitio está desactivado"""
-    return """<!DOCTYPE html><html lang="es"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Servicio no disponible</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#eaeaea;
-  min-height:100vh;display:flex;align-items:center;justify-content:center}
-.box{text-align:center;padding:50px 30px;max-width:480px}
-.icon{font-size:5rem;margin-bottom:20px}
-h1{font-size:1.8rem;color:#faa307;margin-bottom:14px}
-p{color:#aaa;font-size:1rem;line-height:1.6}
-</style></head><body>
-<div class="box">
-  <div class="icon">🔒</div>
-  <h1>Servicio no disponible</h1>
+  <h1>SERVICIO NO DISPONIBLE</h1>
   <p>Este servicio se encuentra temporalmente suspendido.<br>
   Por favor contacta al administrador para mas informacion.</p>
 </div>
@@ -167,111 +127,320 @@ def generar_numero_ficha():
     now = datetime.now()
     return "%s%s" % (now.strftime("%H%M%S"), str(now.microsecond)[:3])
 
+# ══════════════════════════════════════════════════════════════
+# CSS ESTILO NETFLIX + MARCA DE AGUA NBA
+# ══════════════════════════════════════════════════════════════
 CSS = """
-:root{--p:#e85d04;--s:#faa307;--dk:#1a1a2e;--cd:#16213e;
-  --tx:#eaeaea;--mu:#aaa;--ok:#2ecc71;--wn:#f39c12;
-  --er:#e74c3c;--bl:#3498db;--env:#9b59b6;--r:12px}
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;600;700;800&display=swap');
+
+:root{
+  --p:#E50914;
+  --s:#B20710;
+  --dk:#141414;
+  --cd:#1f1f1f;
+  --tx:#eaeaea;
+  --mu:#b3b3b3;
+  --ok:#46d369;
+  --wn:#e87c03;
+  --er:#E50914;
+  --bl:#0071eb;
+  --env:#6200ea;
+  --r:6px;
+  --nba-blue:#1d428a;
+  --nba-red:#C8102E;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:var(--tx);min-height:100vh}
-nav{background:linear-gradient(135deg,var(--dk),#0d0d1f);border-bottom:2px solid var(--p);
-  padding:14px 30px;display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:0;z-index:50;box-shadow:0 4px 20px rgba(232,93,4,.3)}
-.nb{font-size:1.6rem;font-weight:800;color:var(--s);text-decoration:none;display:flex;align-items:center;gap:10px}
-.nb img{height:38px;width:38px;object-fit:cover;border-radius:8px;border:2px solid var(--p)}
-.nl{display:flex;gap:10px;flex-wrap:wrap}
-.nl a{color:var(--tx);text-decoration:none;padding:8px 16px;border-radius:20px;
-  font-size:.9rem;transition:all .3s;border:1px solid transparent}
-.nl a:hover,.nl a.act{background:var(--p);border-color:var(--s);color:#fff}
-.con{max-width:1100px;margin:0 auto;padding:30px 20px}
-.hero{background:linear-gradient(135deg,var(--p),var(--s));border-radius:var(--r);
-  padding:40px;text-align:center;margin-bottom:28px;box-shadow:0 8px 32px rgba(232,93,4,.4)}
-.hero h1{font-size:2.1rem;margin-bottom:8px}.hero p{font-size:1rem;opacity:.9}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px}
-.card{background:var(--cd);border-radius:var(--r);border:1px solid #2a2a4a;
-  overflow:hidden;transition:transform .3s,box-shadow .3s}
-.card:hover{transform:translateY(-4px);box-shadow:0 10px 28px rgba(232,93,4,.3)}
-.ci{width:100%;height:150px;background:linear-gradient(135deg,#1a1a2e,#2a2a4a);
-  display:flex;align-items:center;justify-content:center;font-size:3.5rem}
-.cb{padding:16px}.ct{font-size:1.05rem;font-weight:700;margin-bottom:6px}
-.cp{color:var(--s);font-size:1.2rem;font-weight:800;margin-bottom:12px}
+
+/* ── MARCA DE AGUA NBA ── */
+body::before{
+  content:"NBA";
+  position:fixed;
+  bottom:30px;
+  right:40px;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:7rem;
+  font-weight:900;
+  color:rgba(229,9,20,0.06);
+  letter-spacing:8px;
+  z-index:0;
+  pointer-events:none;
+  user-select:none;
+  line-height:1;
+}
+body::after{
+  content:"NBA";
+  position:fixed;
+  top:30%;
+  left:-20px;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:5rem;
+  font-weight:900;
+  color:rgba(29,66,138,0.05);
+  letter-spacing:6px;
+  z-index:0;
+  pointer-events:none;
+  user-select:none;
+  transform:rotate(-90deg);
+  transform-origin:left center;
+}
+
+body{
+  font-family:'Montserrat',sans-serif;
+  background:#141414;
+  color:var(--tx);
+  min-height:100vh;
+  position:relative;
+}
+
+/* ── NAVBAR ── */
+nav{
+  background:linear-gradient(180deg,rgba(0,0,0,.9) 0%,rgba(20,20,20,.7) 100%);
+  border-bottom:3px solid var(--p);
+  padding:14px 40px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  position:sticky;
+  top:0;
+  z-index:50;
+  backdrop-filter:blur(10px);
+  box-shadow:0 4px 30px rgba(229,9,20,.25);
+}
+.nb{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:2rem;
+  font-weight:400;
+  color:#fff;
+  text-decoration:none;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  letter-spacing:3px;
+}
+.nb img{height:38px;width:38px;object-fit:cover;border-radius:4px;border:2px solid var(--p)}
+.nb-nba{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:.75rem;
+  letter-spacing:4px;
+  color:var(--nba-red);
+  background:var(--nba-blue);
+  padding:2px 7px;
+  border-radius:3px;
+  margin-left:4px;
+  vertical-align:middle;
+}
+.nl{display:flex;gap:6px;flex-wrap:wrap}
+.nl a{
+  color:var(--mu);
+  text-decoration:none;
+  padding:7px 16px;
+  border-radius:4px;
+  font-size:.85rem;
+  font-weight:600;
+  letter-spacing:.5px;
+  text-transform:uppercase;
+  transition:all .2s;
+  border:1px solid transparent;
+}
+.nl a:hover,.nl a.act{
+  background:var(--p);
+  color:#fff;
+  border-color:var(--s);
+}
+
+/* ── CONTENEDOR ── */
+.con{max-width:1100px;margin:0 auto;padding:30px 20px;position:relative;z-index:1}
+
+/* ── HERO ── */
+.hero{
+  background:linear-gradient(135deg,#000 0%,#1a0000 50%,#141414 100%);
+  border-radius:var(--r);
+  padding:50px 40px;
+  text-align:center;
+  margin-bottom:28px;
+  border:1px solid rgba(229,9,20,.3);
+  box-shadow:0 0 60px rgba(229,9,20,.15),inset 0 0 60px rgba(0,0,0,.5);
+  position:relative;
+  overflow:hidden;
+}
+.hero::before{
+  content:"NBA";
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  font-family:'Bebas Neue',sans-serif;
+  font-size:12rem;
+  color:rgba(229,9,20,0.04);
+  letter-spacing:20px;
+  pointer-events:none;
+  white-space:nowrap;
+}
+.hero h1{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:3rem;
+  letter-spacing:4px;
+  margin-bottom:10px;
+  text-shadow:0 0 30px rgba(229,9,20,.5);
+}
+.hero p{font-size:1rem;color:var(--mu)}
+
+/* ── CARDS ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.card{
+  background:#181818;
+  border-radius:var(--r);
+  border:1px solid #2a2a2a;
+  overflow:hidden;
+  transition:transform .25s,box-shadow .25s,border-color .25s;
+  cursor:pointer;
+}
+.card:hover{
+  transform:scale(1.04) translateY(-4px);
+  box-shadow:0 10px 40px rgba(229,9,20,.35);
+  border-color:var(--p);
+}
+.ci{
+  width:100%;height:150px;
+  background:linear-gradient(135deg,#1a0000,#2a2a2a);
+  display:flex;align-items:center;justify-content:center;font-size:3.5rem;
+}
+.cb{padding:16px}
+.ct{font-size:1rem;font-weight:700;margin-bottom:6px;letter-spacing:.5px}
+.cp{color:var(--p);font-size:1.2rem;font-weight:800;margin-bottom:12px;font-family:'Bebas Neue',sans-serif;letter-spacing:1px}
+
+/* ── FORMS ── */
 .fg{margin-bottom:14px}
-.fg label{display:block;font-size:.82rem;color:var(--mu);margin-bottom:5px;
-  font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-.fg input,.fg select{width:100%;padding:10px 14px;background:#0f0f1a;
-  border:1.5px solid #2a2a4a;border-radius:8px;color:var(--tx);font-size:.93rem}
-.fg input:focus,.fg select:focus{outline:none;border-color:var(--p)}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border:none;
-  border-radius:8px;font-size:.93rem;font-weight:600;cursor:pointer;
-  transition:all .3s;text-decoration:none;white-space:nowrap}
-.btp{background:var(--p);color:#fff}.btp:hover{background:#c74d00}
-.bts{background:var(--ok);color:#fff}.bts:hover{background:#27ae60}
-.btw{background:var(--wn);color:#fff}.btw:hover{background:#e67e22}
-.btd{background:var(--er);color:#fff}.btd:hover{background:#c0392b}
-.bti{background:var(--bl);color:#fff}.bti:hover{background:#2980b9}
-.btenv{background:var(--env);color:#fff}.btenv:hover{background:#8e44ad}
+.fg label{
+  display:block;font-size:.78rem;color:var(--mu);margin-bottom:5px;
+  font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+}
+.fg input,.fg select{
+  width:100%;padding:11px 14px;
+  background:#333;
+  border:1.5px solid #444;
+  border-radius:4px;color:var(--tx);font-size:.93rem;
+  font-family:'Montserrat',sans-serif;
+  transition:border-color .2s;
+}
+.fg input:focus,.fg select:focus{outline:none;border-color:var(--p);background:#3a0000}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:10px 22px;border:none;border-radius:4px;
+  font-size:.88rem;font-weight:700;cursor:pointer;
+  transition:all .2s;text-decoration:none;white-space:nowrap;
+  text-transform:uppercase;letter-spacing:.8px;
+  font-family:'Montserrat',sans-serif;
+}
+.btp{background:var(--p);color:#fff}.btp:hover{background:#f40612;box-shadow:0 0 20px rgba(229,9,20,.5)}
+.bts{background:var(--ok);color:#000}.bts:hover{background:#5ce479}
+.btw{background:var(--wn);color:#fff}.btw:hover{background:#c96d02}
+.btd{background:#333;color:#fff;border:1px solid #555}.btd:hover{background:var(--er)}
+.bti{background:var(--bl);color:#fff}.bti:hover{background:#0060cc}
+.btenv{background:var(--env);color:#fff}.btenv:hover{background:#5000c9}
 .btb{width:100%;justify-content:center}
-.bdg{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.78rem;font-weight:600}
-.bp{background:rgba(243,156,18,.2);color:var(--wn);border:1px solid var(--wn)}
-.bc{background:rgba(46,204,113,.2);color:var(--ok);border:1px solid var(--ok)}
-.bx{background:rgba(231,76,60,.2);color:var(--er);border:1px solid var(--er)}
-.br{background:rgba(52,152,219,.2);color:var(--bl);border:1px solid var(--bl)}
-.benv{background:rgba(155,89,182,.2);color:var(--env);border:1px solid var(--env)}
+
+/* ── BADGES ── */
+.bdg{display:inline-block;padding:3px 10px;border-radius:3px;font-size:.73rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.bp{background:rgba(232,124,3,.2);color:var(--wn);border:1px solid var(--wn)}
+.bc{background:rgba(70,211,105,.15);color:var(--ok);border:1px solid var(--ok)}
+.bx{background:rgba(229,9,20,.15);color:var(--er);border:1px solid var(--er)}
+.br{background:rgba(0,113,235,.15);color:var(--bl);border:1px solid var(--bl)}
+.benv{background:rgba(98,0,234,.15);color:#bb86fc;border:1px solid #6200ea}
+
+/* ── TABLA ── */
 .tw{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
-th{background:#0f0f1a;padding:11px 13px;text-align:left;color:var(--s);
-  font-size:.82rem;text-transform:uppercase;letter-spacing:.5px}
-td{padding:10px 13px;border-bottom:1px solid #1f1f3a;font-size:.87rem;vertical-align:middle}
-tr:hover td{background:rgba(232,93,4,.04)}
+th{
+  background:#0a0a0a;padding:11px 13px;text-align:left;
+  color:var(--p);font-size:.75rem;text-transform:uppercase;letter-spacing:1px;
+  font-family:'Bebas Neue',sans-serif;font-size:.9rem;
+}
+td{padding:10px 13px;border-bottom:1px solid #2a2a2a;font-size:.87rem;vertical-align:middle}
+tr:hover td{background:rgba(229,9,20,.05)}
+
+/* ── PANELS ── */
 .ag{display:grid;grid-template-columns:1fr 2fr;gap:20px}
 @media(max-width:768px){.ag{grid-template-columns:1fr}}
-.pnl{background:var(--cd);border-radius:var(--r);padding:22px;border:1px solid #2a2a4a;margin-bottom:20px}
-.pnl h2{font-size:1.12rem;margin-bottom:16px;color:var(--s);border-bottom:1px solid #2a2a4a;padding-bottom:8px}
-.tr2{background:var(--cd);border-radius:var(--r);padding:22px;margin-top:16px;border:1px solid #2a2a4a}
-.pi{background:#0f0f1a;border-radius:10px;padding:15px;margin-bottom:12px;border-left:4px solid var(--p)}
+.pnl{background:#181818;border-radius:var(--r);padding:22px;border:1px solid #2a2a2a;margin-bottom:20px}
+.pnl h2{
+  font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:2px;
+  margin-bottom:16px;color:var(--p);border-bottom:2px solid #2a2a2a;padding-bottom:8px;
+}
+.tr2{background:#181818;border-radius:var(--r);padding:22px;margin-top:16px;border:1px solid #2a2a2a}
+.pi{background:#1f1f1f;border-radius:var(--r);padding:15px;margin-bottom:12px;border-left:4px solid var(--p)}
 .pm{display:flex;gap:14px;flex-wrap:wrap;margin-top:9px;font-size:.83rem;color:var(--mu)}
-.sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-bottom:20px}
-.sc{background:var(--cd);border-radius:var(--r);padding:16px;text-align:center;border:1px solid #2a2a4a}
-.sc .nm{font-size:1.7rem;font-weight:800;color:var(--s)}.sc .lb{font-size:.8rem;color:var(--mu);margin-top:2px}
-.lb2{max-width:380px;margin:70px auto;background:var(--cd);border-radius:var(--r);
-  padding:36px;border:1px solid #2a2a4a;box-shadow:0 8px 32px rgba(0,0,0,.5)}
-.lb2 h2{text-align:center;margin-bottom:26px;color:var(--s);font-size:1.4rem}
-.al{padding:10px 15px;border-radius:8px;margin-bottom:13px;font-size:.88rem}
-.al-ok{background:rgba(46,204,113,.15);border:1px solid var(--ok);color:var(--ok)}
-.al-er{background:rgba(231,76,60,.15);border:1px solid var(--er);color:var(--er)}
-.al-in{background:rgba(250,163,7,.15);border:1px solid var(--s);color:var(--s)}
-.ob{background:var(--cd);border-radius:var(--r);padding:18px;margin-bottom:22px;border:1px solid #2a2a4a}
-.ob h3{color:var(--s);font-size:1rem;margin-bottom:12px}
-.oc{background:#0f0f1a;border-radius:8px;padding:9px 14px;display:flex;align-items:center;
-  gap:10px;margin-bottom:6px;border-left:3px solid var(--p);flex-wrap:wrap}
-.on2{background:var(--p);color:#fff;border-radius:6px;padding:2px 8px;font-weight:800;font-size:.83rem}
-.ficha{background:var(--env);color:#fff;border-radius:6px;padding:2px 8px;font-weight:800;font-size:.83rem}
-.eb{background:rgba(52,152,219,.12);border:2px solid #3498db;border-radius:10px;padding:15px;margin:10px 0}
-footer{text-align:center;padding:26px;color:var(--mu);font-size:.82rem;
-  border-top:1px solid #1f1f3a;margin-top:36px}
-.env-section{background:var(--cd);border-radius:var(--r);padding:22px;
-  margin-bottom:20px;border:2px solid var(--env)}
-.env-section h2{font-size:1.12rem;margin-bottom:16px;color:var(--env);
-  border-bottom:1px solid var(--env);padding-bottom:8px}
-.env-row{background:#0f0f1a;border-radius:8px;padding:10px 14px;margin-bottom:8px;
-  border-left:4px solid var(--env);display:flex;align-items:center;
-  gap:12px;flex-wrap:wrap;opacity:.85}
-.overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;
-  background:rgba(0,0,0,.82);z-index:99999;
+
+/* ── STATS ── */
+.sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.sc{
+  background:#181818;border-radius:var(--r);padding:18px;text-align:center;
+  border:1px solid #2a2a2a;border-top:3px solid var(--p);
+  transition:transform .2s;
+}
+.sc:hover{transform:translateY(-2px)}
+.sc .nm{font-family:'Bebas Neue',sans-serif;font-size:2rem;font-weight:400;color:var(--p);letter-spacing:2px}
+.sc .lb{font-size:.75rem;color:var(--mu);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+
+/* ── LOGIN ── */
+.lb2{
+  max-width:380px;margin:70px auto;background:#181818;border-radius:var(--r);
+  padding:40px;border:1px solid #333;box-shadow:0 0 60px rgba(229,9,20,.2);
+}
+.lb2 h2{
+  text-align:center;margin-bottom:26px;color:#fff;
+  font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:3px;
+}
+
+/* ── ALERTAS ── */
+.al{padding:12px 16px;border-radius:4px;margin-bottom:13px;font-size:.88rem;font-weight:600}
+.al-ok{background:rgba(70,211,105,.12);border:1px solid var(--ok);color:var(--ok)}
+.al-er{background:rgba(229,9,20,.12);border:1px solid var(--er);color:var(--er)}
+.al-in{background:rgba(232,124,3,.12);border:1px solid var(--wn);color:var(--wn)}
+
+/* ── PEDIDOS EN PROCESO ── */
+.ob{background:#181818;border-radius:var(--r);padding:18px;margin-bottom:22px;border:1px solid #2a2a2a;border-left:4px solid var(--p)}
+.ob h3{color:var(--p);font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;margin-bottom:12px}
+.oc{
+  background:#1f1f1f;border-radius:4px;padding:9px 14px;
+  display:flex;align-items:center;gap:10px;margin-bottom:6px;
+  border-left:3px solid var(--p);flex-wrap:wrap;
+}
+.on2{background:var(--p);color:#fff;border-radius:3px;padding:2px 8px;font-weight:800;font-size:.78rem}
+.ficha{background:var(--env);color:#fff;border-radius:3px;padding:2px 8px;font-weight:800;font-size:.78rem}
+
+/* ── MODAL ── */
+.overlay{
+  display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,.88);z-index:99999;
   justify-content:center;align-items:flex-start;
-  padding:30px 15px;overflow-y:auto}
+  padding:30px 15px;overflow-y:auto;
+  backdrop-filter:blur(4px);
+}
 .overlay.show{display:flex}
-.modal-box{background:var(--cd);border-radius:var(--r);padding:26px;
+.modal-box{
+  background:#181818;border-radius:var(--r);padding:28px;
   width:100%;max-width:460px;border:2px solid var(--p);
-  position:relative;margin:auto}
+  position:relative;margin:auto;box-shadow:0 0 60px rgba(229,9,20,.3);
+}
 .modal-box.wide{max-width:440px}
-.modal-close{position:absolute;top:12px;right:14px;
+.modal-close{
+  position:absolute;top:12px;right:14px;
   background:rgba(255,255,255,.1);border:none;color:#fff;
   font-size:1.3rem;font-weight:bold;cursor:pointer;
-  border-radius:6px;width:32px;height:32px;
-  display:flex;align-items:center;justify-content:center}
+  border-radius:4px;width:32px;height:32px;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .2s;
+}
 .modal-close:hover{background:var(--er)}
-.modal-title{font-size:1.1rem;font-weight:700;color:var(--s);margin-bottom:18px;padding-right:35px}
-.tk{background:#fff;color:#111;border-radius:8px;padding:20px;
+.modal-title{
+  font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px;
+  color:var(--p);margin-bottom:18px;padding-right:35px;
+}
+
+/* ── TICKET ── */
+.tk{background:#fff;color:#111;border-radius:6px;padding:20px;
   font-family:'Courier New',monospace;border:1px dashed #bbb;margin-top:4px}
 .tkh{text-align:center;border-bottom:2px dashed #ccc;padding-bottom:10px;margin-bottom:10px}
 .tkh h2{font-size:1.1rem;color:#111}
@@ -279,9 +448,27 @@ footer{text-align:center;padding:26px;color:var(--mu);font-size:.82rem;
 .tkr.bld{font-weight:800;font-size:.95rem}
 .tkd{border:none;border-top:1px dashed #bbb;margin:7px 0}
 .tkf{text-align:center;margin-top:10px;border-top:2px dashed #ccc;padding-top:9px;font-size:.75rem;color:#666}
-.conf-pnl{background:var(--cd);border-radius:var(--r);padding:22px;border:2px solid var(--s);margin-bottom:20px}
-.conf-pnl h2{font-size:1.12rem;margin-bottom:16px;color:var(--s);border-bottom:1px solid var(--s);padding-bottom:8px}
-.logo-prev{width:70px;height:70px;object-fit:cover;border-radius:10px;border:2px solid var(--p);display:block;margin-bottom:10px}
+
+/* ── CONFIGURACION ── */
+.conf-pnl{background:#181818;border-radius:var(--r);padding:22px;border:2px solid var(--p);margin-bottom:20px}
+.conf-pnl h2{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:2px;margin-bottom:16px;color:var(--p);border-bottom:1px solid var(--p);padding-bottom:8px}
+.logo-prev{width:70px;height:70px;object-fit:cover;border-radius:6px;border:2px solid var(--p);display:block;margin-bottom:10px}
+
+/* ── ENVIADOS ── */
+.env-section{background:#181818;border-radius:var(--r);padding:22px;margin-bottom:20px;border:2px solid var(--env)}
+.env-section h2{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:2px;margin-bottom:16px;color:#bb86fc;border-bottom:1px solid var(--env);padding-bottom:8px}
+.env-row{background:#1f1f1f;border-radius:4px;padding:10px 14px;margin-bottom:8px;border-left:4px solid var(--env);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+
+/* ── EB REVISION ── */
+.eb{background:rgba(0,113,235,.08);border:2px solid #0071eb;border-radius:6px;padding:15px;margin:10px 0}
+
+/* ── FOOTER ── */
+footer{
+  text-align:center;padding:26px;color:#555;font-size:.78rem;
+  border-top:1px solid #2a2a2a;margin-top:36px;
+  letter-spacing:1px;text-transform:uppercase;position:relative;z-index:1;
+}
+footer span{color:var(--p);font-family:'Bebas Neue',sans-serif;letter-spacing:3px;font-size:.9rem}
 """
 
 TK_CSS = "body{font-family:monospace;padding:20px;max-width:370px;margin:0 auto}.tkr{display:flex;justify-content:space-between;padding:3px 0;font-size:.87rem}.tkd{border:none;border-top:1px dashed #bbb;margin:7px 0}.tkh{text-align:center;border-bottom:2px dashed #ccc;padding-bottom:10px;margin-bottom:10px}.tkf{text-align:center;margin-top:10px;border-top:2px dashed #ccc;padding-top:9px;font-size:.75rem;color:#666}.bld{font-weight:800;font-size:.95rem}"
@@ -291,15 +478,17 @@ def head(active, cfg=None):
         cfg = get_config()
     nombre_sitio = cfg.get("nombre_sitio","RestauranteApp")
     logo_sitio   = cfg.get("logo_sitio","")
-    links = [("menu","/","Menu"),("tracking","/mis-pedidos","Mis Pedidos"),("admin","/admin","Admin")]
+    links = [("menu","/","Menú"),("tracking","/mis-pedidos","Mis Pedidos"),("admin","/admin","Admin")]
     li = "".join('<a href="%s" class="%s">%s</a>' % (u,"act" if active==k else "",l) for k,u,l in links)
     logo_tag = ('<img src="data:image/jpeg;base64,%s">' % logo_sitio) if logo_sitio else "🍽️"
     return """<!DOCTYPE html><html lang="es"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <title>%s</title><style>%s</style></head><body>
-<nav><a class="nb" href="/">%s %s</a><div class="nl">%s</div></nav>""" % (nombre_sitio, CSS, logo_tag, nombre_sitio, li)
+<nav><a class="nb" href="/">%s %s <span class="nb-nba">NBA</span></a><div class="nl">%s</div></nav>""" % (nombre_sitio, CSS, logo_tag, nombre_sitio, li)
 
-FOOT = "<footer><p>RestauranteApp 2024</p></footer>"
+FOOT = '<footer><p>RestauranteApp 2024 &nbsp;|&nbsp; <span>NBA</span> Edition</p></footer>'
 
 MODAL_JS = """
 <script>
@@ -370,15 +559,15 @@ def build_ticket_html(pid, nombre, celular, direccion, producto,
         hora_row = '<div class="tkr"><span>Llega:</span><strong>%s</strong></div>' % hora
     ficha_row = ""
     if numero_ficha:
-        ficha_row = '<div class="tkr"><span>Ficha #:</span><strong style="color:#9b59b6">%s</strong></div>' % numero_ficha
-    col_map = {"aceptado":"#2ecc71","cancelado":"#e74c3c","revision":"#3498db","pendiente":"#f39c12",
-               "Confirmado":"#2ecc71","Cancelado":"#e74c3c","Pendiente":"#f39c12","Enviado":"#9b59b6"}
+        ficha_row = '<div class="tkr"><span>Ficha #:</span><strong style="color:#6200ea">%s</strong></div>' % numero_ficha
+    col_map = {"aceptado":"#46d369","cancelado":"#E50914","revision":"#0071eb","pendiente":"#e87c03",
+               "Confirmado":"#46d369","Cancelado":"#E50914","Pendiente":"#e87c03","Enviado":"#6200ea"}
     txt_map = {"aceptado":"Confirmado","cancelado":"Cancelado","revision":"En revision",
                "pendiente":"Pendiente","Confirmado":"Confirmado","Cancelado":"Cancelado",
                "Pendiente":"Pendiente","Enviado":"Enviado 🚀"}
-    col = col_map.get(str(estado_o_cc),"#f39c12")
+    col = col_map.get(str(estado_o_cc),"#e87c03")
     txt = txt_map.get(str(estado_o_cc),"Pendiente")
-    pie = "Panel Admin" if is_admin else "Gracias por tu pedido! Guarda este comprobante."
+    pie = "Panel Admin — NBA Edition" if is_admin else "Gracias por tu pedido! Guarda este comprobante."
     lbl = "ORDEN" if is_admin else "COMPROBANTE"
     return """<div class="tk">
   <div class="tkh"><h2>RestauranteApp</h2>
@@ -397,9 +586,9 @@ def build_ticket_html(pid, nombre, celular, direccion, producto,
   <div class="tkr"><span>Subtotal:</span><span>%s</span></div>
   %s
   <hr class="tkd">
-  <div class="tkr bld"><span>TOTAL:</span><span style="color:#e85d04;font-size:1.05rem">%s</span></div>
+  <div class="tkr bld"><span>TOTAL:</span><span style="color:#E50914;font-size:1.05rem">%s</span></div>
   <div style="margin-top:7px">
-    <span style="background:%s;color:#fff;padding:3px 10px;border-radius:20px;font-size:.78rem">%s</span>
+    <span style="background:%s;color:#fff;padding:3px 10px;border-radius:3px;font-size:.78rem">%s</span>
   </div>
   %s
   <div class="tkf">%s</div>
@@ -420,7 +609,7 @@ def banner_proceso(peds):
     extra = " (%d en total)" % len(activos) if len(activos)>10 else ""
     return '<div class="ob"><h3>🔥 Pedidos en Proceso%s</h3>%s</div>' % (extra, chips)
 
-# ═══════════════════════════════════════════════════════════════
+
 @app.route("/")
 def index():
     if not sitio_activo(): return pagina_bloqueada()
@@ -442,7 +631,7 @@ def index():
   <div class="cb">
     <div class="ct">%s</div>
     <div class="cp">%s</div>
-    <button class="btn btp btb" onclick="openModal('moPed%d')">🛒 Pedir Ahora</button>
+    <button class="btn btp btb" onclick="openModal('moPed%d')">🛒 PEDIR AHORA</button>
   </div>
 </div>""" % (img, p["nombre"], fmtp(p["precio"]), p["id"])
 
@@ -465,8 +654,8 @@ def index():
         <input type="number" name="cantidad" id="cant%d" value="1" min="1" max="20" required
                oninput="document.getElementById('tot%d_m').value='₡ '+(%g*parseInt(this.value||1)).toLocaleString('es-CO')"></div>
       <div class="fg"><label>Total estimado</label>
-        <input type="text" id="tot%d_m" value="%s" readonly style="color:#faa307;font-weight:800;opacity:.9"></div>
-      <button type="submit" class="btn btp btb">✅ Confirmar Pedido</button>
+        <input type="text" id="tot%d_m" value="%s" readonly style="color:#E50914;font-weight:800;opacity:.9"></div>
+      <button type="submit" class="btn btp btb">✅ CONFIRMAR PEDIDO</button>
     </form>
   </div>
 </div>""" % (mid, mid, p["nombre"], p["id"], js_esc(p["nombre"]), p["precio"],
@@ -477,11 +666,11 @@ def index():
     return head("menu", cfg) + """
 <div class="con">
   <div class="hero">
-    <h1>🍽️ Bienvenido a %s</h1>
+    <h1>🍽️ BIENVENIDO A %s</h1>
     <p>Pide en linea y recibe en tu puerta</p>
   </div>
   %s%s
-  <h2 style="margin-bottom:16px;font-size:1.3rem">📋 Nuestro Menu</h2>
+  <h2 style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:3px;margin-bottom:16px">📋 NUESTRO MENÚ</h2>
   %s
 </div>
 %s
@@ -537,10 +726,10 @@ def mis_pedidos():
             ficha = p["numero_ficha"] if p["numero_ficha"] else ""
 
             if estado == "Enviado":
-                borde = "border-left-color:#9b59b6;opacity:.85"
-            elif cc=="revision":    borde="border-left-color:#3498db"
-            elif cc=="cancelado": borde="border-left-color:#e74c3c;opacity:.75"
-            elif estado=="Confirmado": borde="border-left-color:#2ecc71"
+                borde = "border-left-color:#6200ea;opacity:.85"
+            elif cc=="revision":    borde="border-left-color:#0071eb"
+            elif cc=="cancelado": borde="border-left-color:#E50914;opacity:.75"
+            elif estado=="Confirmado": borde="border-left-color:#46d369"
             else: borde=""
 
             if estado == "Enviado":
@@ -552,34 +741,34 @@ def mis_pedidos():
 
             env_banner = ""
             if estado == "Enviado":
-                env_banner = """<div style="background:rgba(155,89,182,.15);border:2px solid #9b59b6;
-                  border-radius:10px;padding:13px;margin:10px 0;text-align:center">
-                  <p style="color:#9b59b6;font-weight:700;font-size:1rem">🚀 Tu pedido fue enviado!</p>
+                env_banner = """<div style="background:rgba(98,0,234,.15);border:2px solid #6200ea;
+                  border-radius:6px;padding:13px;margin:10px 0;text-align:center">
+                  <p style="color:#bb86fc;font-weight:700;font-size:1rem">🚀 Tu pedido fue enviado!</p>
                   <p style="font-size:.85rem;color:#aaa;margin-top:5px">Pronto llegara a tu direccion</p>
                 </div>"""
 
             caja = ""
             if envio > 0 and cc == "revision":
                 caja = """<div class="eb">
-  <p style="color:#3498db;font-weight:700;font-size:.97rem;margin-bottom:10px">
+  <p style="color:#0071eb;font-weight:700;font-size:.97rem;margin-bottom:10px">
     🚨 El restaurante agrego costo de envio — confirma tu pedido
   </p>
   <div style="display:flex;justify-content:space-between;padding:4px 0">
     <span>Subtotal:</span><strong>%s</strong></div>
   <div style="display:flex;justify-content:space-between;padding:4px 0">
-    <span>Envio:</span><strong style="color:#f39c12">+ %s</strong></div>
-  <div style="border-top:1px dashed #3498db;margin:9px 0"></div>
+    <span>Envio:</span><strong style="color:#e87c03">+ %s</strong></div>
+  <div style="border-top:1px dashed #0071eb;margin:9px 0"></div>
   <div style="display:flex;justify-content:space-between;font-size:1.06rem;font-weight:800">
-    <span>Total a pagar:</span><span style="color:#faa307">%s</span></div>
+    <span>Total a pagar:</span><span style="color:#E50914">%s</span></div>
   <div style="display:flex;gap:10px;margin-top:13px">
-    <a href="/confirmar/%d/aceptar/%s" class="btn bts" style="flex:1;justify-content:center">✅ Acepto</a>
+    <a href="/confirmar/%d/aceptar/%s" class="btn bts" style="flex:1;justify-content:center">✅ ACEPTO</a>
     <a href="/confirmar/%d/cancelar/%s" class="btn btd" style="flex:1;justify-content:center"
-       onclick="return confirm('Cancelar pedido?')">❌ Cancelar</a>
+       onclick="return confirm('Cancelar pedido?')">❌ CANCELAR</a>
   </div>
 </div>""" % (fmtp(sub), fmtp(envio), fmtp(float(p["total"])),
              p["id"], celular, p["id"], celular)
 
-            hora_sp = '<span style="color:#2ecc71">⏰ Llega: %s</span>' % p["hora_estimada"] if p["hora_estimada"] else ""
+            hora_sp = '<span style="color:#46d369">⏰ Llega: %s</span>' % p["hora_estimada"] if p["hora_estimada"] else ""
             ficha_sp = '<span class="ficha">Ficha #%s</span>' % ficha if ficha else ""
             mid_tk = "moTk%d" % p["id"]
             tk_html = build_ticket_html(p["id"],p["nombre_cliente"],p["celular"],p["direccion"],
@@ -590,11 +779,11 @@ def mis_pedidos():
 <div class="overlay" id="%s">
   <div class="modal-box wide">
     <button class="modal-close" onclick="closeModal('%s')">✕</button>
-    <div class="modal-title">🧾 Comprobante</div>
+    <div class="modal-title">🧾 COMPROBANTE</div>
     %s
     <div style="display:flex;gap:10px;margin-top:13px">
-      <button class="btn btp" style="flex:1;justify-content:center" onclick="printTicket('%s')">🖨️ Imprimir</button>
-      <a href="/descargar/%d" class="btn bts" style="flex:1;justify-content:center">⬇️ Descargar</a>
+      <button class="btn btp" style="flex:1;justify-content:center" onclick="printTicket('%s')">🖨️ IMPRIMIR</button>
+      <a href="/descargar/%d" class="btn bts" style="flex:1;justify-content:center">⬇️ DESCARGAR</a>
     </div>
   </div>
 </div>""" % (mid_tk, mid_tk, tk_html, mid_tk, p["id"])
@@ -604,12 +793,12 @@ def mis_pedidos():
     <strong>🛒 %s</strong>%s%s</div>
   %s%s
   <div class="pm"><span>👤 %s</span><span>📍 %s</span>
-    <span>Cant: %d</span><span style="color:#faa307;font-weight:700">%s</span>
+    <span>Cant: %d</span><span style="color:#E50914;font-weight:700">%s</span>
     <span>%s</span>%s</div>
   <div style="margin-top:11px;display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn bti" style="font-size:.83rem;padding:6px 13px"
-            onclick="openModal('moTk%d')">🧾 Ver mi orden</button>
-    <a href="/descargar/%d" class="btn btw" style="font-size:.83rem;padding:6px 13px">⬇️ Descargar</a>
+            onclick="openModal('moTk%d')">🧾 VER MI ORDEN</button>
+    <a href="/descargar/%d" class="btn btw" style="font-size:.83rem;padding:6px 13px">⬇️ DESCARGAR</a>
   </div>
 </div>""" % (borde, p["producto_nombre"], bdg, ficha_sp, env_banner, caja,
              p["nombre_cliente"], p["direccion"], p["cantidad"],
@@ -617,14 +806,14 @@ def mis_pedidos():
              p["id"], p["id"])
 
     if peds is not None:
-        result = '<div class="tr2"><h2 style="margin-bottom:14px;color:#faa307">📋 Tus pedidos — %s <span style="float:right;font-size:.87rem;color:#aaa">%d pedido(s)</span></h2>%s</div>' % (celular, len(peds), items) if peds else '<div class="al al-in" style="margin-top:16px;text-align:center">No se encontraron pedidos para <strong>%s</strong>.</div>' % celular
+        result = '<div class="tr2"><h2 style="margin-bottom:14px;color:#E50914;font-family:\'Bebas Neue\',sans-serif;letter-spacing:2px">📋 TUS PEDIDOS — %s <span style="float:right;font-size:.87rem;color:#aaa;font-family:Montserrat,sans-serif">%d pedido(s)</span></h2>%s</div>' % (celular, len(peds), items) if peds else '<div class="al al-in" style="margin-top:16px;text-align:center">No se encontraron pedidos para <strong>%s</strong>.</div>' % celular
     else:
         result = ""
 
     return head("tracking", cfg) + """
 <div class="con">
   <div class="hero">
-    <h1>📦 Seguimiento de Pedidos</h1>
+    <h1>📦 SEGUIMIENTO DE PEDIDOS</h1>
     <p>Ingresa tu celular para ver el estado de tus pedidos</p>
   </div>
   <div class="pnl" style="max-width:500px;margin:0 auto">
@@ -632,7 +821,7 @@ def mis_pedidos():
     <form method="POST">
       <div class="fg"><label>Tu celular</label>
         <input type="text" name="celular" value="%s" placeholder="Ej: 3001234567" required></div>
-      <button type="submit" class="btn btp btb">🔍 Buscar Pedidos</button>
+      <button type="submit" class="btn btp btb">🔍 BUSCAR PEDIDOS</button>
     </form>
   </div>
   %s
@@ -665,7 +854,7 @@ def descargar(pid):
     estado = p["estado"] or "Pendiente"
     txt_e = {"Confirmado":"Confirmado","Cancelado":"Cancelado","Pendiente":"Pendiente","Enviado":"Enviado"}
     ficha = p["numero_ficha"] if p["numero_ficha"] else ""
-    ln = ["="*44,"  RESTAURANTEAPP - COMPROBANTE","="*44,
+    ln = ["="*44,"  RESTAURANTEAPP — NBA EDITION","="*44,
           "  Pedido:    #%d" % p["id"]]
     if ficha:
         ln.append("  Ficha #:   %s" % ficha)
@@ -678,7 +867,7 @@ def descargar(pid):
     ln += ["-"*44,"  TOTAL:     ₡ {:,.0f}".format(float(p["total"])),
            "  Estado:    %s" % txt_e.get(estado,"Pendiente")]
     if p["hora_estimada"]: ln.append("  Llega:     %s" % p["hora_estimada"])
-    ln += ["="*44,"  Gracias por tu pedido!","="*44]
+    ln += ["="*44,"  Gracias por tu pedido!","  NBA Edition 🏀","="*44]
     return Response("\n".join(ln), mimetype="text/plain",
         headers={"Content-Disposition":"attachment; filename=orden_%d.txt" % pid})
 
@@ -702,11 +891,11 @@ def render_admin_page(peds, prods, grafica=None, msg="", tipo="ok"):
     s = get_stats(peds, prods)
     stats_html = """<div class="sg">
   <div class="sc"><div class="nm">%d</div><div class="lb">📦 Total</div></div>
-  <div class="sc"><div class="nm" style="color:#f39c12">%d</div><div class="lb">⏳ Pendientes</div></div>
-  <div class="sc"><div class="nm" style="color:#2ecc71">%d</div><div class="lb">✅ Confirmados</div></div>
-  <div class="sc"><div class="nm" style="color:#9b59b6">%d</div><div class="lb">🚀 Enviados</div></div>
-  <div class="sc"><div class="nm" style="color:#3498db">%d</div><div class="lb">🔵 En Revision</div></div>
-  <div class="sc"><div class="nm" style="color:#e74c3c">%d</div><div class="lb">❌ Cancelados</div></div>
+  <div class="sc"><div class="nm" style="color:#e87c03">%d</div><div class="lb">⏳ Pendientes</div></div>
+  <div class="sc"><div class="nm" style="color:#46d369">%d</div><div class="lb">✅ Confirmados</div></div>
+  <div class="sc"><div class="nm" style="color:#bb86fc">%d</div><div class="lb">🚀 Enviados</div></div>
+  <div class="sc"><div class="nm" style="color:#0071eb">%d</div><div class="lb">🔵 En Revision</div></div>
+  <div class="sc"><div class="nm" style="color:#E50914">%d</div><div class="lb">❌ Cancelados</div></div>
   <div class="sc"><div class="nm">%d</div><div class="lb">🍔 Productos</div></div>
   <div class="sc"><div class="nm" style="font-size:1rem">₡ %s</div><div class="lb">💰 Ingresos</div></div>
 </div>""" % (s["total"],s["pendientes"],s["confirmados"],s["enviados"],s["revision"],
@@ -734,9 +923,9 @@ def render_admin_page(peds, prods, grafica=None, msg="", tipo="ok"):
 <div class="overlay" id="%s">
   <div class="modal-box wide">
     <button class="modal-close" onclick="closeModal('%s')">✕</button>
-    <div class="modal-title">🧾 Orden #%d</div>
+    <div class="modal-title">🧾 ORDEN #%d</div>
     %s
-    <button class="btn btp btb" style="margin-top:13px" onclick="printTicket('%s')">🖨️ Imprimir</button>
+    <button class="btn btp btb" style="margin-top:13px" onclick="printTicket('%s')">🖨️ IMPRIMIR</button>
   </div>
 </div>""" % (mid_ord, mid_ord, p["id"], tk_html, mid_ord)
 
@@ -749,7 +938,7 @@ def render_admin_page(peds, prods, grafica=None, msg="", tipo="ok"):
 <div class="overlay" id="%s">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal('%s')">✕</button>
-    <div class="modal-title">✏️ Editar Pedido #%s</div>
+    <div class="modal-title">✏️ EDITAR PEDIDO #%s</div>
     <form method="POST" action="/admin/upd-ped">
       <input type="hidden" name="pedido_id"      value="%s">
       <input type="hidden" name="total_original"  value="%g">
@@ -761,16 +950,16 @@ def render_admin_page(peds, prods, grafica=None, msg="", tipo="ok"):
                oninput="recalcTotal(%s,%g)"></div>
       <div class="fg"><label>💰 Total a cobrar</label>
         <input type="number" name="total" id="tot_%s" value="%g"
-               min="0" step="100" style="color:#faa307;font-weight:800"></div>
+               min="0" step="100" style="color:#E50914;font-weight:800"></div>
       <div class="fg"><label>Hora estimada</label>
         <input type="text" name="hora_estimada" value="%s"
                placeholder="Ej: 45 min / 6:30 PM"></div>
       <div class="fg"><label>Estado del pedido</label>
         <select name="estado">%s</select></div>
-      <div style="background:rgba(155,89,182,.1);border:1px solid #9b59b6;border-radius:8px;padding:10px;margin-bottom:14px;font-size:.82rem;color:#9b59b6">
+      <div style="background:rgba(98,0,234,.1);border:1px solid #6200ea;border-radius:6px;padding:10px;margin-bottom:14px;font-size:.82rem;color:#bb86fc">
         💡 Al marcar <strong>Enviado</strong> el pedido se movera al historial y el cliente vera que fue enviado.
       </div>
-      <button type="submit" class="btn btp btb">💾 Guardar Cambios</button>
+      <button type="submit" class="btn btp btb">💾 GUARDAR CAMBIOS</button>
     </form>
   </div>
 </div>""" % (mid_ed, mid_ed, uid,
@@ -781,7 +970,6 @@ def render_admin_page(peds, prods, grafica=None, msg="", tipo="ok"):
              p["hora_estimada"] or "",
              estado_opts)
 
-        # columna Dirección de Envío
         filas_ped += """<tr>
   <td><strong>#%d</strong></td>
   <td><span class="ficha">%s</span></td>
@@ -817,9 +1005,9 @@ def render_admin_page(peds, prods, grafica=None, msg="", tipo="ok"):
 <div class="overlay" id="%s">
   <div class="modal-box wide">
     <button class="modal-close" onclick="closeModal('%s')">✕</button>
-    <div class="modal-title">🧾 Orden Enviada #%d</div>
+    <div class="modal-title">🧾 ORDEN ENVIADA #%d</div>
     %s
-    <button class="btn btp btb" style="margin-top:13px" onclick="printTicket('%s')">🖨️ Imprimir</button>
+    <button class="btn btp btb" style="margin-top:13px" onclick="printTicket('%s')">🖨️ IMPRIMIR</button>
   </div>
 </div>""" % (mid_env, mid_env, p["id"], tk_html_env, mid_env)
 
@@ -828,11 +1016,11 @@ def render_admin_page(peds, prods, grafica=None, msg="", tipo="ok"):
   <td><span class="ficha">%s</span></td>
   <td><strong>%s</strong></td>
   <td>%s</td>
-  <td style="color:#faa307;font-weight:700">%s</td>
+  <td style="color:#E50914;font-weight:700">%s</td>
   <td style="font-size:.78rem;color:#aaa">%s</td>
   <td>
     <button class="btn btenv" style="font-size:.77rem;padding:5px 9px"
-            onclick="openModal('%s')">🧾 Ver</button>
+            onclick="openModal('%s')">🧾 VER</button>
   </td>
 </tr>""" % (p["id"], ficha, p["nombre_cliente"], p["producto_nombre"],
             fmtp(float(p["total"])), p["fecha"], mid_env)
@@ -844,21 +1032,21 @@ def render_admin_page(peds, prods, grafica=None, msg="", tipo="ok"):
 <div class="overlay" id="%s">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal('%s')">✕</button>
-    <div class="modal-title">✏️ Editar Producto</div>
+    <div class="modal-title">✏️ EDITAR PRODUCTO</div>
     <form method="POST" action="/admin/edit-prod">
       <input type="hidden" name="producto_id" value="%d">
       <div class="fg"><label>Nombre</label>
         <input type="text" name="nombre" value="%s" required></div>
       <div class="fg"><label>Precio (₡)</label>
         <input type="number" name="precio" value="%g" required min="0" step="100"></div>
-      <button type="submit" class="btn btp btb">💾 Guardar</button>
+      <button type="submit" class="btn btp btb">💾 GUARDAR</button>
     </form>
   </div>
 </div>""" % (mid_ep, mid_ep, p["id"], p["nombre"], p["precio"])
 
         filas_prod += """<tr>
   <td>%s</td>
-  <td style="color:#faa307;font-weight:700">%s</td>
+  <td style="color:#E50914;font-weight:700">%s</td>
   <td style="display:flex;gap:6px;flex-wrap:wrap">
     <button class="btn btw" style="font-size:.8rem;padding:5px 9px"
             onclick="openModal('%s')">✏️ Editar</button>
@@ -870,73 +1058,60 @@ def render_admin_page(peds, prods, grafica=None, msg="", tipo="ok"):
 
     graf_html = ('<div style="text-align:center"><img src="data:image/png;base64,%s" style="max-width:100%%;border-radius:var(--r)"></div>' % grafica) if grafica else '<p style="text-align:center;color:#aaa">Haz clic en Generar Grafica.</p>'
 
-    # ── CAMBIO 1: cabecera con columna Dirección Envío ──
-    tabla_ped = """<div class="pnl"><h2>📋 Pedidos Activos — en orden de llegada (%d)</h2>
+    tabla_ped = """<div class="pnl"><h2>📋 PEDIDOS ACTIVOS — en orden de llegada (%d)</h2>
 <div class="tw"><table>
 <thead><tr><th>#</th><th>Ficha</th><th>Nombre</th><th>Producto</th><th>Direccion Envio</th><th>Estado</th><th>Acciones</th></tr></thead>
 <tbody>%s</tbody></table></div></div>""" % (
         len(peds_activos),
         filas_ped or '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px">No hay pedidos activos.</td></tr>')
 
-    tabla_env = """<div class="env-section"><h2>🚀 Pedidos Enviados — Historial (%d)</h2>
+    tabla_env = """<div class="env-section"><h2>🚀 PEDIDOS ENVIADOS — Historial (%d)</h2>
 <div class="tw"><table>
 <thead><tr><th>#</th><th>Ficha</th><th>Nombre</th><th>Producto</th><th>Total</th><th>Fecha</th><th>Ver</th></tr></thead>
 <tbody>%s</tbody></table></div></div>%s""" % (
         len(peds_enviados),
-        filas_env or '<tr><td colspan="7" style="text-align:center;color:#9b59b6;padding:20px;opacity:.6">Sin pedidos enviados aun.</td></tr>',
+        filas_env or '<tr><td colspan="7" style="text-align:center;color:#bb86fc;padding:20px;opacity:.6">Sin pedidos enviados aun.</td></tr>',
         modales_env)
 
     tabla_prod = """<div class="ag">
-<div class="pnl"><h2>➕ Agregar Producto</h2>
+<div class="pnl"><h2>➕ AGREGAR PRODUCTO</h2>
 <form method="POST" action="/admin/add-prod" enctype="multipart/form-data">
   <div class="fg"><label>Nombre</label><input type="text" name="nombre" required placeholder="Nombre del producto"></div>
   <div class="fg"><label>Precio (₡)</label><input type="number" name="precio" required min="0" step="100" placeholder="12000"></div>
   <div class="fg"><label>Imagen (opcional)</label><input type="file" name="imagen" accept="image/*"></div>
-  <button type="submit" class="btn bts btb">✅ Agregar</button>
+  <button type="submit" class="btn bts btb">✅ AGREGAR</button>
 </form></div>
-<div class="pnl"><h2>📦 Productos del Menu</h2>
+<div class="pnl"><h2>📦 PRODUCTOS DEL MENÚ</h2>
 <div class="tw"><table><thead><tr><th>Nombre</th><th>Precio</th><th>Acciones</th></tr></thead>
 <tbody>%s</tbody></table></div></div></div>""" % (filas_prod or '<tr><td colspan="3" style="text-align:center;color:#aaa">No hay productos.</td></tr>')
 
-    # ── CAMBIO 2: Pestaña Mi Restaurante ──
     nombre_actual = cfg.get("nombre_sitio","RestauranteApp")
     logo_actual   = cfg.get("logo_sitio","")
     logo_preview  = ""
     if logo_actual:
         logo_preview = '<div style="margin-bottom:12px"><p style="font-size:.82rem;color:#aaa;margin-bottom:6px">Logo actual:</p><img src="data:image/jpeg;base64,%s" class="logo-prev"></div>' % logo_actual
 
-    tab_conf = """<div class="conf-pnl">
-  <h2>🎨 Personalizar Pagina de Inicio</h2>
-  <form method="POST" action="/admin/config-sitio" enctype="multipart/form-data">
-    <div class="fg"><label>Nombre del Restaurante</label>
-      <input type="text" name="nombre_sitio" value="%s" required
-             placeholder="Ej: Pizzeria Don Marco"></div>
-    %s
-    <div class="fg"><label>Logo / Foto del Restaurante</label>
-      <input type="file" name="logo" accept="image/*"></div>
-    <p style="font-size:.8rem;color:#aaa;margin-bottom:14px">
-      💡 El nombre y logo aparecen en la barra de navegacion y en la bienvenida de la pagina de inicio.
-    </p>
-    <button type="submit" class="btn bts btb">💾 Guardar Cambios</button>
-  </form>
-</div>""" % (nombre_actual, logo_preview)
-
-    # Panel maestro (solo visible con contraseña maestra)
     if session.get("master"):
         activo_ahora = cfg.get("sitio_activo","1") == "1"
         if activo_ahora:
-            master_btn = '<a href="/admin/toggle-sitio" class="btn btd" style="font-size:1rem;padding:12px 28px" onclick="return confirm(&quot;Desactivar el sitio del cliente?&quot;)">&#128274; Desactivar Sitio</a>'
-            master_estado = '<span style="color:#2ecc71;font-weight:700">&#10003; ACTIVO</span>'
+            master_btn = '<a href="/admin/toggle-sitio" class="btn btd" style="font-size:1rem;padding:12px 28px" onclick="return confirm(&quot;Desactivar el sitio del cliente?&quot;)">&#128274; DESACTIVAR SITIO</a>'
+            master_estado = '<span style="color:#46d369;font-weight:700">&#10003; ACTIVO</span>'
         else:
-            master_btn = '<a href="/admin/toggle-sitio" class="btn bts" style="font-size:1rem;padding:12px 28px">&#10003; Activar Sitio</a>'
-            master_estado = '<span style="color:#e74c3c;font-weight:700">&#128274; DESACTIVADO</span>'
-        master_panel = """<div style="background:rgba(155,89,182,.15);border:2px solid #9b59b6;border-radius:12px;padding:20px;margin-bottom:20px">
-  <p style="color:#9b59b6;font-weight:800;font-size:1rem;margin-bottom:14px">&#128273; Panel Maestro &mdash; Estado del sitio: """ + master_estado + """</p>
-  <div style="display:flex;gap:12px;flex-wrap:wrap">""" + master_btn + """</div>
+            master_btn = '<a href="/admin/toggle-sitio" class="btn bts" style="font-size:1rem;padding:12px 28px">&#10003; ACTIVAR SITIO</a>'
+            master_estado = '<span style="color:#E50914;font-weight:700">&#128274; DESACTIVADO</span>'
+        master_panel = """<div style="background:rgba(98,0,234,.12);border:2px solid #6200ea;border-radius:8px;padding:20px;margin-bottom:20px">
+  <p style="color:#bb86fc;font-weight:800;font-size:1rem;margin-bottom:14px;font-family:'Bebas Neue',sans-serif;letter-spacing:2px">&#128273; PANEL MAESTRO &mdash; Estado del sitio: """ + master_estado + """</p>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">""" + master_btn + """
+  <a href="/admin/reset-mes" class="btn" style="font-size:1rem;padding:12px 28px;background:linear-gradient(135deg,#E50914,#8B0000);color:#fff;border:2px solid #ff4444"
+     onclick="return confirm('&#9888; RESETEAR MES\\n\\nEsto borrara TODOS los pedidos y estadisticas para empezar desde cero.\\n\\n¿Estas seguro?')">
+     &#128465; RESETEAR MES
+  </a>
+  </div>
+  <p style="color:#555;font-size:.75rem;margin-top:10px">⚠️ El boton RESETEAR MES borra todos los pedidos e ingresos del mes para empezar en cero.</p>
 </div>"""
-  else:
+    else:
         if session.get("admin"):
-         master_panel = """<div style="background:rgba(229,9,20,.12);border:2px solid #E50914;border-radius:8px;padding:20px;margin-bottom:20px">
+            master_panel = """<div style="background:rgba(229,9,20,.12);border:2px solid #E50914;border-radius:8px;padding:20px;margin-bottom:20px">
   <p style="color:#E50914;font-weight:800;font-size:1rem;margin-bottom:14px;font-family:'Bebas Neue',sans-serif;letter-spacing:2px">&#128465; RESETEAR MES</p>
   <p style="color:#aaa;font-size:.85rem;margin-bottom:14px">Borra todos los pedidos e ingresos para empezar el mes desde cero.</p>
   <a href="/admin/reset-mes" class="btn" style="font-size:1rem;padding:12px 28px;background:#8B0000;color:#fff;border:2px solid #E50914"
@@ -945,66 +1120,63 @@ def render_admin_page(peds, prods, grafica=None, msg="", tipo="ok"):
   </a>
 </div>"""
         else:
-             master_panel = ""
+            master_panel = ""
 
-    # Pestaña Mi Restaurante
-    nombre_actual = cfg.get("nombre_sitio","RestauranteApp")
-    logo_actual   = cfg.get("logo_sitio","")
-    logo_preview  = ('<div style="margin-bottom:10px"><p style="font-size:.82rem;color:#aaa;margin-bottom:6px">Logo actual:</p><img src="data:image/jpeg;base64,%s" style="height:70px;width:70px;object-fit:cover;border-radius:10px;border:2px solid var(--p)"></div>' % logo_actual) if logo_actual else ""
     activo = cfg.get("sitio_activo","1") == "1"
     if activo:
-        estado_sitio = '<div style="background:rgba(46,204,113,.15);border:1px solid #2ecc71;border-radius:10px;padding:13px;margin-bottom:16px;text-align:center"><span style="color:#2ecc71;font-weight:700;font-size:1rem">&#10003; Sitio ACTIVO &mdash; clientes pueden acceder</span></div>'
+        estado_sitio = '<div style="background:rgba(70,211,105,.12);border:1px solid #46d369;border-radius:6px;padding:13px;margin-bottom:16px;text-align:center"><span style="color:#46d369;font-weight:700;font-size:1rem">&#10003; SITIO ACTIVO &mdash; clientes pueden acceder</span></div>'
     else:
-        estado_sitio = '<div style="background:rgba(231,76,60,.15);border:1px solid #e74c3c;border-radius:10px;padding:13px;margin-bottom:16px;text-align:center"><span style="color:#e74c3c;font-weight:700;font-size:1rem">&#128274; Sitio DESACTIVADO</span></div>'
+        estado_sitio = '<div style="background:rgba(229,9,20,.12);border:1px solid #E50914;border-radius:6px;padding:13px;margin-bottom:16px;text-align:center"><span style="color:#E50914;font-weight:700;font-size:1rem">&#128274; SITIO DESACTIVADO</span></div>'
     if session.get("master"):
         if activo:
-            btn_toggle = '<a href="/admin/toggle-sitio" class="btn btd" style="width:100%;justify-content:center;margin-bottom:20px" onclick="return confirm(&quot;Desactivar el sitio?&quot;)">&#128274; Desactivar Sitio</a>'
+            btn_toggle = '<a href="/admin/toggle-sitio" class="btn btd" style="width:100%;justify-content:center;margin-bottom:20px" onclick="return confirm(&quot;Desactivar el sitio?&quot;)">&#128274; DESACTIVAR SITIO</a>'
         else:
-            btn_toggle = '<a href="/admin/toggle-sitio" class="btn bts" style="width:100%;justify-content:center;margin-bottom:20px">&#10003; Activar Sitio</a>'
+            btn_toggle = '<a href="/admin/toggle-sitio" class="btn bts" style="width:100%;justify-content:center;margin-bottom:20px">&#10003; ACTIVAR SITIO</a>'
     else:
         btn_toggle = ""
-    tab_conf = '''<div style="background:var(--cd);border-radius:var(--r);padding:22px;border:2px solid var(--s);margin-bottom:20px">
-  <h2 style="font-size:1.12rem;margin-bottom:16px;color:var(--s);border-bottom:1px solid var(--s);padding-bottom:8px">🎨 Mi Restaurante</h2>''' + estado_sitio + btn_toggle + '''
-  <hr style="border-color:#2a2a4a;margin-bottom:18px">
-  <h3 style="color:var(--s);font-size:.95rem;margin-bottom:14px">Personalizar apariencia</h3>
+
+    tab_conf = '''<div style="background:#181818;border-radius:var(--r);padding:22px;border:2px solid var(--p);margin-bottom:20px">
+  <h2 style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:3px;margin-bottom:16px;color:var(--p);border-bottom:2px solid var(--p);padding-bottom:8px">🎨 MI RESTAURANTE</h2>''' + estado_sitio + btn_toggle + '''
+  <hr style="border-color:#2a2a2a;margin-bottom:18px">
+  <h3 style="color:var(--p);font-family:'Bebas Neue',sans-serif;letter-spacing:2px;font-size:1.1rem;margin-bottom:14px">PERSONALIZAR APARIENCIA</h3>
   <form method="POST" action="/admin/config-sitio" enctype="multipart/form-data">''' + logo_preview + '''
     <div class="fg"><label>Nombre del Restaurante</label>
       <input type="text" name="nombre_sitio" value="''' + nombre_actual + '''" required placeholder="Ej: Pizzeria Don Marco"></div>
     <div class="fg"><label>Logo / Foto del Restaurante</label>
       <input type="file" name="logo" accept="image/*"></div>
     <p style="font-size:.8rem;color:#aaa;margin-bottom:14px">💡 El nombre y logo aparecen en el navbar y en la bienvenida del inicio.</p>
-    <button type="submit" class="btn bts btb">💾 Guardar Cambios</button>
+    <button type="submit" class="btn bts btb">💾 GUARDAR CAMBIOS</button>
   </form>
 </div>'''
+
     html  = head("admin", cfg)
     html += "<div class=\"con\">"
     html += "<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:20px\">"
-    html += "<h1 style=\"font-size:1.65rem\">&#9881;&#65039; Panel de Administracion</h1>"
-    html += "<a href=\"/admin/logout\" class=\"btn btd\">&#128682; Salir</a></div>"
+    html += "<h1 style=\"font-family:'Bebas Neue',sans-serif;font-size:2.2rem;letter-spacing:4px;color:#fff\">&#9881;&#65039; PANEL DE ADMINISTRACIÓN</h1>"
+    html += "<a href=\"/admin/logout\" class=\"btn btd\">&#128682; SALIR</a></div>"
     html += alerta(msg, tipo)
     html += banner_proceso(peds_activos)
     html += stats_html
     html += master_panel
     html += "<div style=\"display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap\">"
-    html += "<button class=\"btn btp\" onclick=\"showTab('ped')\">&#128203; Pedidos Activos</button>"
-    html += "<button class=\"btn btenv\" onclick=\"showTab('env')\">&#128640; Enviados</button>"
-    html += "<button class=\"btn btw\" onclick=\"showTab('prod')\">&#127828; Productos</button>"
-    html += "<button class=\"btn bts\" onclick=\"showTab('conf')\">&#127912; Mi Restaurante</button>"
-    html += "<button class=\"btn bti\" onclick=\"showTab('stats')\">&#128202; Estadisticas</button>"
+    html += "<button class=\"btn btp\" onclick=\"showTab('ped')\">&#128203; PEDIDOS ACTIVOS</button>"
+    html += "<button class=\"btn btenv\" onclick=\"showTab('env')\">&#128640; ENVIADOS</button>"
+    html += "<button class=\"btn btw\" onclick=\"showTab('prod')\">&#127828; PRODUCTOS</button>"
+    html += "<button class=\"btn bts\" onclick=\"showTab('conf')\">&#127912; MI RESTAURANTE</button>"
+    html += "<button class=\"btn bti\" onclick=\"showTab('stats')\">&#128202; ESTADÍSTICAS</button>"
     html += "</div>"
     html += "<div id=\"tab_ped\">" + tabla_ped + "</div>"
     html += "<div id=\"tab_env\" style=\"display:none\">" + tabla_env + "</div>"
     html += "<div id=\"tab_prod\" style=\"display:none\">" + tabla_prod + "</div>"
     html += "<div id=\"tab_conf\" style=\"display:none\">" + tab_conf + "</div>"
-    html += "<div id=\"tab_stats\" style=\"display:none\"><div class=\"pnl\"><h2>&#128202; Estadisticas</h2>"
+    html += "<div id=\"tab_stats\" style=\"display:none\"><div class=\"pnl\"><h2>📊 ESTADÍSTICAS</h2>"
     html += "<div style=\"text-align:center;margin-bottom:16px\">"
-    html += "<a href=\"/admin/grafica\" class=\"btn btp\">&#128260; Generar Grafica</a></div>"
+    html += "<a href=\"/admin/grafica\" class=\"btn btp\">&#128260; GENERAR GRÁFICA</a></div>"
     html += graf_html + "</div></div>"
     html += "</div>"
     html += modales_ped + modales_prod
     html += FOOT + MODAL_JS + "</body></html>"
     return html
-
 
 
 @app.route("/admin/toggle-sitio")
@@ -1046,15 +1218,23 @@ def admin_login():
             session["admin"] = True
             session["master"] = False
             return redirect(url_for("admin"))
-        err = "❌ Contrasena incorrecta."
+        err = "❌ Contraseña incorrecta."
     return head("admin") + """
-<div class="lb2"><h2>🔐 Panel Admin</h2>%s
+<div class="lb2">
+  <h2>🔐 PANEL ADMIN</h2>
+  <div style="text-align:center;margin-bottom:20px">
+    <span style="font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:4px;
+      background:#1d428a;color:#fff;padding:4px 12px;border-radius:3px;border:2px solid #C8102E">
+      🏀 NBA EDITION
+    </span>
+  </div>
+  %s
   <form method="POST">
-    <div class="fg"><label>Contrasena</label>
+    <div class="fg"><label>Contraseña</label>
       <input type="password" name="password" placeholder="••••••••" required autofocus></div>
-    <button type="submit" class="btn btp btb">Ingresar</button>
+    <button type="submit" class="btn btp btb">INGRESAR</button>
   </form>
-  <p style="text-align:center;margin-top:13px;color:#aaa;font-size:.82rem">Por defecto: <strong></strong></p>
+  <p style="text-align:center;margin-top:13px;color:#555;font-size:.82rem">Por defecto: <strong></strong></p>
 </div>""" % alerta(err,"er") + FOOT + MODAL_JS + "</body></html>"
 
 
@@ -1140,28 +1320,29 @@ def grafica_route():
         return redirect(url_for("admin", msg="No hay pedidos para generar estadisticas.", tipo="in"))
     noms  = list(ventas.keys())
     cants = [ventas[n] for n in noms]
-    cols  = ["#e85d04","#faa307","#f48c06","#dc2f02","#d62828","#e9c46a","#2ecc71","#3498db","#9b59b6","#1abc9c"][:len(noms)]
+    # Colores estilo Netflix
+    cols  = ["#E50914","#B20710","#f5f5f1","#e87c03","#46d369","#0071eb","#bb86fc","#6200ea","#1d428a","#C8102E"][:len(noms)]
     fig, axes = plt.subplots(1,2,figsize=(14,6))
-    fig.patch.set_facecolor("#0f0f1a")
-    ax1 = axes[0]; ax1.set_facecolor("#16213e")
-    bars = ax1.bar(range(len(noms)),cants,color=cols,edgecolor="#2a2a4a",linewidth=1.5)
+    fig.patch.set_facecolor("#141414")
+    ax1 = axes[0]; ax1.set_facecolor("#1f1f1f")
+    bars = ax1.bar(range(len(noms)),cants,color=cols,edgecolor="#333",linewidth=1.5)
     ax1.set_xticks(range(len(noms)))
     ax1.set_xticklabels([n[:16] for n in noms],rotation=28,ha="right",color="#eaeaea",fontsize=9)
-    ax1.set_title("Unidades Vendidas",color="#faa307",fontsize=12,fontweight="bold",pad=12)
+    ax1.set_title("Unidades Vendidas",color="#E50914",fontsize=13,fontweight="bold",pad=12)
     ax1.set_ylabel("Unidades",color="#aaa"); ax1.tick_params(colors="#aaa")
-    for sp in ax1.spines.values(): sp.set_color("#2a2a4a")
+    for sp in ax1.spines.values(): sp.set_color("#333")
     for b,v in zip(bars,cants):
-        ax1.text(b.get_x()+b.get_width()/2,b.get_height()+.05,str(v),ha="center",color="#faa307",fontsize=10,fontweight="bold")
-    ax2 = axes[1]; ax2.set_facecolor("#16213e")
-    wedges,texts,autotexts = ax2.pie(cants,colors=cols,autopct="%1.1f%%",startangle=90,pctdistance=.8,wedgeprops={"edgecolor":"#0f0f1a","linewidth":2})
+        ax1.text(b.get_x()+b.get_width()/2,b.get_height()+.05,str(v),ha="center",color="#E50914",fontsize=10,fontweight="bold")
+    ax2 = axes[1]; ax2.set_facecolor("#1f1f1f")
+    wedges,texts,autotexts = ax2.pie(cants,colors=cols,autopct="%1.1f%%",startangle=90,pctdistance=.8,wedgeprops={"edgecolor":"#141414","linewidth":2})
     for t in texts: t.set_color("#eaeaea")
     for t in autotexts: t.set_color("white"); t.set_fontweight("bold")
-    ax2.set_title("Distribucion",color="#faa307",fontsize=12,fontweight="bold",pad=12)
+    ax2.set_title("Distribucion",color="#E50914",fontsize=13,fontweight="bold",pad=12)
     patches = [mpatches.Patch(color=c,label=n[:18]) for c,n in zip(cols,noms)]
-    ax2.legend(handles=patches,loc="lower center",bbox_to_anchor=(.5,-.15),ncol=2,fontsize=8,facecolor="#16213e",edgecolor="#2a2a4a",labelcolor="#eaeaea")
+    ax2.legend(handles=patches,loc="lower center",bbox_to_anchor=(.5,-.15),ncol=2,fontsize=8,facecolor="#1f1f1f",edgecolor="#333",labelcolor="#eaeaea")
     plt.tight_layout()
     buf = io.BytesIO()
-    plt.savefig(buf,format="png",bbox_inches="tight",facecolor="#0f0f1a",dpi=120)
+    plt.savefig(buf,format="png",bbox_inches="tight",facecolor="#141414",dpi=120)
     buf.seek(0)
     g64 = base64.b64encode(buf.read()).decode()
     plt.close()
@@ -1171,27 +1352,27 @@ def grafica_route():
     db2.close()
     return render_admin_page(peds2, prods2, g64, "", "ok")
 
+
 @app.route("/admin/reset-mes")
 def reset_mes():
-    if not session.get("admin") or session.get("master"): return redirect(url_for("admin_login"))
+    if not session.get("master"): return redirect(url_for("admin_login"))
     db = get_db()
     total_peds = db.execute("SELECT COUNT(*) FROM pedidos").fetchone()[0]
     total_ingresos = db.execute("SELECT SUM(total) FROM pedidos WHERE estado != 'Cancelado'").fetchone()[0] or 0
     db.execute("DELETE FROM pedidos")
     db.commit()
     db.close()
-    msg = "🗑️ Mes reseteado — %d pedidos borrados (₡ %s en ingresos)." % (total_peds, "{:,.0f}".format(total_ingresos))
+    msg = "🗑️ Mes reseteado — Se borraron %d pedidos (₡ %s en ingresos). Empezando desde cero." % (total_peds, "{:,.0f}".format(total_ingresos))
     return redirect(url_for("admin", msg=msg, tipo="ok"))
+
+
 if __name__ == "__main__":
+    import os
     init_db()
     print("\n" + "="*48)
-    print("  🍽️  RestauranteApp lista!")
+    print("  🏀  RestauranteApp NBA Edition!")
     print("="*48)
     print("  Cliente:  http://localhost:5000")
     print("  Admin:    http://localhost:5000/admin")
-    print("  Password: ")
     print("="*48 + "\n")
-
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-
-
